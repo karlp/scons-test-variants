@@ -1,0 +1,33 @@
+import os.path
+
+env = Environment()
+env.Replace(CPPPATH = [
+	"../common",
+	]
+)
+
+VariantDir("bin_32", ".", duplicate = False)
+VariantDir("bin_64", ".", duplicate = False)
+
+e32 = env.Clone()
+e32.Append(CPPDEFINES=[("CONFIG_BUILD_SMALL", 1)])
+e64 = env.Clone()
+e64.Append(CPPDEFINES=[("CONFIG_BUILD_SMALL", 0)])
+
+# Without the #, you just get:
+#  "Two environments with different actions  were specified for the same target: common/shared.o"
+# (Of course, with the #, you get _strange_ files in the build dirs, but that's just a build dir...)
+sources = Split("main.c #../common/shared.c")
+
+e32_objs = [e32.Object(fn) for fn in [os.path.join("bin_32/", x) for x in sources]]
+e64_objs = [e64.Object(fn) for fn in [os.path.join("bin_64/", x) for x in sources]]
+# And this print won't even print if you don't have the '#' above!
+print("e32 objs are: ", [str(x[0]) for x in e32_objs])
+print("e64 objs are: ", [str(x[0]) for x in e64_objs])
+
+e32.Program("aaa", ["hw_aaa.c"] + e32_objs, CPPDEFINES=[("HW", "AAA")])
+e32.Program("bbb", ["hw_bbb.c"] + e32_objs, CPPDEFINES=[("HW", "BBB")])
+e64.Program("ccc", ["hw_ccc.c"] + e64_objs, CPPDEFINES=[("HW", "CCC")])
+Clean(".", "bin_32")
+Clean(".", "bin_64")
+
