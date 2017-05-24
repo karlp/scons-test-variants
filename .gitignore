@@ -1,1 +1,8 @@
+*.o
 .sconsign.dblite
+#generated
+common/options.h
+project/aaa
+project/bbb
+project/ccc
+
