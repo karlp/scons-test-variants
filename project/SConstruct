@@ -1,10 +1,39 @@
+#!python
 import os.path
+import subprocess
 
 env = Environment()
 env.Replace(CPPPATH = [
 	"../common",
 	]
 )
+
+"""
+In general, it would probably be nicer to generate a file that can
+be included instead, but the existing system I'm comparing with
+used command line -D flags.  It makes the build output more verbose,
+but was capable of being generated inline into makefile variables.
+NOTE: requires version tags like "vXX.YY" to exist in your repo!
+"""
+def add_version_defines(someenv):
+    rawv = subprocess.check_output(["git", "describe", "--dirty"]).strip()
+    chunks = rawv[1:].split("-")
+    major = int(chunks[0].split(".")[0])
+    minor = int(chunks[0].split(".")[1])
+    # For "reasons" tags are only even minor numbers. odd minors therefore
+    # mean that you are running clean, but non-tagged "development" code
+    if chunks[1]: minor += 1
+    clean = 0 if "dirty" in rawv else 1
+    print("attempting to mangle source revision data:", rawv)
+    myopts = {
+        "VERSION_STRING": rawv,
+        "VERSION_MAJOR": major,
+        "VERSION_MINOR": minor,
+        "VERSION_CLEAN": clean,
+    }
+    someenv.Append(CPPDEFINES=myopts)
+
+add_version_defines(env)
 
 VariantDir("bin_32", ".", duplicate = False)
 VariantDir("bin_64", ".", duplicate = False)
